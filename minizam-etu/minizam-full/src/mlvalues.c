@@ -7,6 +7,14 @@
 #include "instruct.h"
 #include "primitives.h"
 
+/***
+ * TODO
+ * 
+ * Dans les trois fonctions où on alloue de la mémoire, on va modifier son comportement.
+ * Il faut d'abord regarder si on a dans la freelist des blocks pour pouvoir faire l'allocation
+ * Si ce n'est pas le cas on fait appel au GC, puis on réessaie de voir dans la free list
+ * Si on n'a toujours rien, on fait un caml_alloc
+ * */
 mlvalue make_empty_block(tag_t tag) {
   mlvalue* block = caml_alloc(sizeof(mlvalue));
   block[0] = Make_header(0, WHITE, tag);
