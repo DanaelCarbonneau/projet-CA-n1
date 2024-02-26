@@ -99,7 +99,7 @@ mlvalue caml_interprete(code_t* prog) {
 
     case APPLY: {
       uint64_t n = prog[pc++];
-      mlvalue* tmp = malloc(n * sizeof(mlvalue)); // TODO: remove malloc
+      mlvalue tmp[n]; // malloc retiré (tableau statique)
       for (uint64_t i = 0; i < n; i++) {
         tmp[i] = POP_STACK();
       }
@@ -110,7 +110,6 @@ mlvalue caml_interprete(code_t* prog) {
       for (int i = n-1; i >= 0; i--) {
         PUSH_STACK(tmp[i]);
       }
-      free(tmp);
       pc = Addr_closure(accu);
       env = Env_closure(accu);
       extra_args = n-1;
@@ -120,7 +119,7 @@ mlvalue caml_interprete(code_t* prog) {
     case APPTERM: {
       uint64_t n = prog[pc++];
       uint64_t m = prog[pc++];
-      mlvalue* tmp = malloc(n * sizeof(mlvalue)); // TODO: remove malloc
+      mlvalue tmp[n]; // malloc retiré
       for (uint64_t i = 0; i < n; i++) {
         tmp[i] = POP_STACK();
       }
@@ -131,7 +130,6 @@ mlvalue caml_interprete(code_t* prog) {
       for (int i = n-1; i >= 0; i--) {
         PUSH_STACK(tmp[i]);
       }
-      free(tmp);
       pc = Addr_closure(accu);
       env = Env_closure(accu);
       extra_args += n-1;
