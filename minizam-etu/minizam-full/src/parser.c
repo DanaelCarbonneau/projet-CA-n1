@@ -48,6 +48,7 @@ int label_addr(lbl_list* l, char* label) {
 void free_labels(lbl_list* l) {
   while (l) {
     lbl_list* next = l->next;
+    free(l->label); // libérer le label, chaîne allouée dynamiquement par strdup
     free(l);
     l = next;
   }
