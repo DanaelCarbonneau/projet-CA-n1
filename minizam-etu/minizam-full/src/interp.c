@@ -99,9 +99,25 @@ mlvalue caml_interprete(code_t* prog) {
 
     case APPLY: {
       uint64_t n = prog[pc++];
+
+      //Cette partie a été travaillée avec Ewen Glaziou
+
+      #if 1
+      //Parcourir la pile pour mettre 3 cases plus haut les n valeurs 
+      for(int i = sp-1 ; i >= sp - n ; i--){
+        stack[i+3] = stack[i];
+      }
+      sp+= 3;//on a remonté le pointeur de pile de 3 en décalant les valeurs
+      stack[sp-n-1] = Val_long(extra_args);
+      stack[sp-n-2]  = Val_long(pc);
+      stack[sp-n-3] = env;
+      #endif 
+      #if 0
+
       mlvalue tmp[n]; // malloc retiré (tableau statique)
       for (uint64_t i = 0; i < n; i++) {
         tmp[i] = POP_STACK();
+
       }
       PUSH_STACK(env);
       PUSH_STACK(Val_long(pc));
@@ -110,6 +126,7 @@ mlvalue caml_interprete(code_t* prog) {
       for (int i = n-1; i >= 0; i--) {
         PUSH_STACK(tmp[i]);
       }
+      #endif
       pc = Addr_closure(accu);
       env = Env_closure(accu);
       extra_args = n-1;
@@ -119,6 +136,17 @@ mlvalue caml_interprete(code_t* prog) {
     case APPTERM: {
       uint64_t n = prog[pc++];
       uint64_t m = prog[pc++];
+
+
+      //Cette partie a été travaillée avec Ewen Glaziou
+      #if 1
+      for (int i = 0 ; i < n ; i++){
+        stack[sp-m+i] = stack[sp-n+i];  //On décale les arguments sur la pile en écrasant les variables locales
+      }
+      sp-= m-n; //on décale manuellement le pointeur
+      #endif
+
+      #if 0
       mlvalue tmp[n]; // malloc retiré
       for (uint64_t i = 0; i < n; i++) {
         tmp[i] = POP_STACK();
@@ -130,6 +158,7 @@ mlvalue caml_interprete(code_t* prog) {
       for (int i = n-1; i >= 0; i--) {
         PUSH_STACK(tmp[i]);
       }
+      #endif
       pc = Addr_closure(accu);
       env = Env_closure(accu);
       extra_args += n-1;
