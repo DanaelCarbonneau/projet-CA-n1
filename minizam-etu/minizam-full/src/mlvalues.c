@@ -6,29 +6,36 @@
 #include "alloc.h"
 #include "instruct.h"
 #include "primitives.h"
+#include "domain_state.h"
 
-/***
- * TODO
- * 
- * Dans les trois fonctions où on alloue de la mémoire, on va modifier son comportement.
- * Il faut d'abord regarder si on a dans la freelist des blocks pour pouvoir faire l'allocation
- * Si ce n'est pas le cas on fait appel au GC, puis on réessaie de voir dans la free list
- * Si on n'a toujours rien, on fait un caml_alloc
- * */
+
 mlvalue make_empty_block(tag_t tag) {
+  #if 0
   mlvalue* block = caml_alloc(sizeof(mlvalue));
-  block[0] = Make_header(0, WHITE, tag);
+  #endif
+  mlvalue * block = Caml_state->heap + Caml_state->end_heap;  //Arithmétique des pointeurs
+  Caml_state->end_heap+=1;    //taille 0 + 1 pour le header
+  block[0] = Make_header(0, WHITE, tag);  
   return Val_ptr(block+1);
 }
 
 mlvalue make_block(size_t size, tag_t tag) {
+  #if 0
   mlvalue* block = caml_alloc((size+1) * sizeof(mlvalue));
+  #endif 
+  mlvalue * block = Caml_state->heap + Caml_state->end_heap;  //Arithmétique des pointeurs
+  Caml_state->end_heap+=size+1;
   block[0] = Make_header(size, WHITE, tag);
   return Val_ptr(block+1);
 }
 
 mlvalue make_closure(uint64_t addr, mlvalue env) {
+  #if 0
   mlvalue* block = caml_alloc(3 * sizeof(mlvalue));
+  #endif 
+  mlvalue * block = Caml_state->heap + Caml_state->end_heap;  //Arithmétique des pointeurs
+  Caml_state->end_heap+=3;  //taille 2 + 1 pour le header
+
   block[0] = Make_header(2, WHITE, CLOSURE_T);
   block[1] = Val_long(addr);
   block[2] = env;
