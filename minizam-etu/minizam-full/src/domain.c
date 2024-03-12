@@ -17,7 +17,7 @@ void caml_init_domain() {
 }
 
 
-void camml_free_domain(){
+void caml_free_domain(){
   free(Caml_state->stack);
   free(Caml_state->heap);
   free(Caml_state);
