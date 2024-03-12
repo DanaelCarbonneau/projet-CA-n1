@@ -10,31 +10,23 @@
 
 
 mlvalue make_empty_block(tag_t tag) {
-  #if 0
-  mlvalue* block = caml_alloc(sizeof(mlvalue));
-  #endif
-  mlvalue * block = Caml_state->heap + Caml_state->end_heap;  //Arithmétique des pointeurs
-  Caml_state->end_heap+=1;    //taille 0 + 1 pour le header
-  block[0] = Make_header(0, WHITE, tag);  
+
+  mlvalue* block = caml_alloc(1);         // Nouvel allocateur défini dans alloc.c
+  block[0] = Make_header(0, WHITE, tag); 
   return Val_ptr(block+1);
 }
 
 mlvalue make_block(size_t size, tag_t tag) {
-  #if 0
-  mlvalue* block = caml_alloc((size+1) * sizeof(mlvalue));
-  #endif 
-  mlvalue * block = Caml_state->heap + Caml_state->end_heap;  //Arithmétique des pointeurs
-  Caml_state->end_heap+=size+1;
+
+  mlvalue* block = caml_alloc(size+1);    //Nouvel allocateur défini dans alloc.c
+  
   block[0] = Make_header(size, WHITE, tag);
   return Val_ptr(block+1);
 }
 
 mlvalue make_closure(uint64_t addr, mlvalue env) {
-  #if 0
-  mlvalue* block = caml_alloc(3 * sizeof(mlvalue));
-  #endif 
-  mlvalue * block = Caml_state->heap + Caml_state->end_heap;  //Arithmétique des pointeurs
-  Caml_state->end_heap+=3;  //taille 2 + 1 pour le header
+
+  mlvalue* block = caml_alloc(3);       // Nouvel allocateur défini dans alloc.c
 
   block[0] = Make_header(2, WHITE, CLOSURE_T);
   block[1] = Val_long(addr);
