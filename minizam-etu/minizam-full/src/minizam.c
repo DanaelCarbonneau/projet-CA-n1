@@ -16,7 +16,7 @@ mlvalue eval_file(char* filename) {
   caml_init_domain();
   mlvalue ret = caml_interprete(code);
   free(code);
-  camml_free_domain();//Plus besoin du tas ou de la pile : on les libère !
+  caml_free_domain();//Plus besoin du tas ou de la pile : on les libère !
   return ret;
 }
 
