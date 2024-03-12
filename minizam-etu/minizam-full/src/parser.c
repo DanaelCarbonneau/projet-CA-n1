@@ -222,10 +222,11 @@ code_t* parse(char* filename) {
 
     read_until_newline(f);
 
+
     code[instr_count++] = (ua_code_t){ .instr = instr, .arg1 = arg1,
                                        .arg2 = arg2 };
     code_size++;
   }
-
+  fclose(f);
   return assemble(code, labels, instr_count, code_size);
 }
