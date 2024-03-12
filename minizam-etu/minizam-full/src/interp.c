@@ -14,8 +14,8 @@
 /* Helpers to manipulate the stack. Note that |sp| always point to the
    first empty element in the stack; hence the prefix -- in POP, but
    postfix ++ in PUSH. */
-#define POP_STACK() stack[--sp]
-#define PUSH_STACK(x) stack[sp++] = x
+#define POP_STACK() stack[--Caml_state->stack_pointer]
+#define PUSH_STACK(x) stack[Caml_state->stack_pointer++] = x
 
 
 
@@ -25,7 +25,7 @@ mlvalue caml_interprete(code_t* prog) {
   mlvalue accu = Val_long(0);
   mlvalue env = Make_empty_env();
 
-  register unsigned int sp = 0;
+  Caml_state->stack_pointer = 0;
   register unsigned int pc = 0;
   unsigned int extra_args = 0;
   unsigned int trap_sp = 0;
@@ -33,12 +33,12 @@ mlvalue caml_interprete(code_t* prog) {
   while(1) {
 
 #ifdef DEBUG
-      printf("pc=%d  accu=%s  sp=%d extra_args=%d trap_sp=%d stack=[",
-             pc, val_to_str(accu), sp, extra_args, trap_sp);
-      if (sp > 0) {
-        printf("%s", val_to_str(stack[sp-1]));
+      printf("pc=%d  accu=%s  Caml_state->stack_pointer=%d extra_args=%d trap_sp=%d stack=[",
+             pc, val_to_str(accu), Caml_state->stack_pointer, extra_args, trap_sp);
+      if (Caml_state->stack_pointer > 0) {
+        printf("%s", val_to_str(stack[Caml_state->stack_pointer-1]));
       }
-      for (int i = sp-2; i >= 0; i--) {
+      for (int i = Caml_state->stack_pointer-2; i >= 0; i--) {
         printf(";%s", val_to_str(stack[i]));
       }
       printf("]  env=%s\n", val_to_str(env));
@@ -90,7 +90,7 @@ mlvalue caml_interprete(code_t* prog) {
       break;
 
     case ACC:
-      accu = stack[sp-prog[pc++]-1];
+      accu = stack[Caml_state->stack_pointer-prog[pc++]-1];
       break;
 
     case ENVACC:
@@ -104,13 +104,13 @@ mlvalue caml_interprete(code_t* prog) {
 
       #if 1
       //Parcourir la pile pour mettre 3 cases plus haut les n valeurs 
-      for(int i = sp-1 ; i >= sp - n ; i--){
+      for(int i = Caml_state->stack_pointer-1 ; i >= Caml_state->stack_pointer - n ; i--){
         stack[i+3] = stack[i];
       }
-      sp+= 3;//on a remonté le pointeur de pile de 3 en décalant les valeurs
-      stack[sp-n-1] = Val_long(extra_args);
-      stack[sp-n-2]  = Val_long(pc);
-      stack[sp-n-3] = env;
+      Caml_state->stack_pointer+= 3;//on a remonté le pointeur de pile de 3 en décalant les valeurs
+      stack[Caml_state->stack_pointer-n-1] = Val_long(extra_args);
+      stack[Caml_state->stack_pointer-n-2]  = Val_long(pc);
+      stack[Caml_state->stack_pointer-n-3] = env;
       #endif 
       #if 0
 
@@ -141,9 +141,9 @@ mlvalue caml_interprete(code_t* prog) {
       //Cette partie a été travaillée avec Ewen Glaziou
       #if 1
       for (int i = 0 ; i < n ; i++){
-        stack[sp-m+i] = stack[sp-n+i];  //On décale les arguments sur la pile en écrasant les variables locales
+        stack[Caml_state->stack_pointer-m+i] = stack[Caml_state->stack_pointer-n+i];  //On décale les arguments sur la pile en écrasant les variables locales
       }
-      sp-= m-n; //on décale manuellement le pointeur
+      Caml_state->stack_pointer-= m-n; //on décale manuellement le pointeur
       #endif
 
       #if 0
@@ -292,7 +292,7 @@ mlvalue caml_interprete(code_t* prog) {
 
     case ASSIGN: {
       uint64_t n = prog[pc++];
-      stack[sp-n-1] = accu;
+      stack[Caml_state->stack_pointer-n-1] = accu;
       accu = Unit;
       break;
     }
@@ -303,7 +303,7 @@ mlvalue caml_interprete(code_t* prog) {
       PUSH_STACK(env);
       PUSH_STACK(Val_long(trap_sp));
       PUSH_STACK(Val_long(addr));
-      trap_sp = sp;
+      trap_sp = Caml_state->stack_pointer;
       break;
     }
 
@@ -320,7 +320,7 @@ mlvalue caml_interprete(code_t* prog) {
         fprintf(stderr, "Uncaught exception: %s\n", val_to_str(accu));
         exit(EXIT_FAILURE);
       } else {
-        sp = trap_sp;
+        Caml_state->stack_pointer = trap_sp;
         pc = Long_val(POP_STACK());
         trap_sp = Long_val(POP_STACK());
         env = POP_STACK();
