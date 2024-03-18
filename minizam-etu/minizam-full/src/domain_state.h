@@ -10,6 +10,8 @@ typedef struct _caml_domain_state {
   mlvalue* heap;
   size_t end_heap;
   size_t stack_pointer;
+  mlvalue accu;
+  mlvalue* env;
 } caml_domain_state;
 
 /* The global state */

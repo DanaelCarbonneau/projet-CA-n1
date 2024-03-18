@@ -10,6 +10,10 @@
 #include "alloc.h"
 #include "primitives.h"
 
+/**
+ * ATTENTION : LES REGISTRES SONT AUSSI DES RACINES, IL FAUT AUSSI LES SORTIR DE INTERP POUR LES EXPLORER POUR LE MARQUAGE
+ * 
+ */
 
 /* Helpers to manipulate the stack. Note that |sp| always point to the
    first empty element in the stack; hence the prefix -- in POP, but
@@ -22,13 +26,14 @@
 mlvalue caml_interprete(code_t* prog) {
 
   mlvalue* stack = Caml_state->stack;
-  mlvalue accu = Val_long(0);
-  mlvalue env = Make_empty_env();
+  Caml_state->accu = Val_long(0);
+  Caml_state->env = Make_empty_env();
 
   Caml_state->stack_pointer = 0;
   register unsigned int pc = 0;
   unsigned int extra_args = 0;
   unsigned int trap_sp = 0;
+
 
   while(1) {
 
@@ -41,31 +46,31 @@ mlvalue caml_interprete(code_t* prog) {
       for (int i = Caml_state->stack_pointer-2; i >= 0; i--) {
         printf(";%s", val_to_str(stack[i]));
       }
-      printf("]  env=%s\n", val_to_str(env));
+      printf("]  Caml_state->Caml_state->env=%s\n", val_to_str(Caml_state->Caml_state->env));
       print_instr(prog, pc);
 #endif
 
     switch (prog[pc++]) {
     case CONST:
-      accu = Val_long(prog[pc++]);
+      Caml_state->accu = Val_long(prog[pc++]);
       break;
 
     case PRIM:
       switch (prog[pc++]) {
-      case ADD:   accu = ml_add(accu, POP_STACK()); break;
-      case SUB:   accu = ml_sub(accu, POP_STACK()); break;
-      case DIV:   accu = ml_div(accu, POP_STACK()); break;
-      case MUL:   accu = ml_mul(accu, POP_STACK()); break;
-      case OR:    accu = ml_or(accu, POP_STACK()); break;
-      case AND:   accu = ml_and(accu, POP_STACK()); break;
-      case NOT:   accu = ml_not(accu); break;
-      case NE:    accu = ml_ne(accu, POP_STACK()); break;
-      case EQ:    accu = ml_eq(accu, POP_STACK()); break;
-      case LT:    accu = ml_lt(accu, POP_STACK()); break;
-      case LE:    accu = ml_le(accu, POP_STACK()); break;
-      case GT:    accu = ml_gt(accu, POP_STACK()); break;
-      case GE:    accu = ml_ge(accu, POP_STACK()); break;
-      case PRINT: accu = ml_print(accu); break;
+      case ADD:   Caml_state->accu = ml_add(Caml_state->accu, POP_STACK()); break;
+      case SUB:   Caml_state->accu = ml_sub(Caml_state->accu, POP_STACK()); break;
+      case DIV:   Caml_state->accu = ml_div(Caml_state->accu, POP_STACK()); break;
+      case MUL:   Caml_state->accu = ml_mul(Caml_state->accu, POP_STACK()); break;
+      case OR:    Caml_state->accu = ml_or(Caml_state->accu, POP_STACK()); break;
+      case AND:   Caml_state->accu = ml_and(Caml_state->accu, POP_STACK()); break;
+      case NOT:   Caml_state->accu = ml_not(Caml_state->accu); break;
+      case NE:    Caml_state->accu = ml_ne(Caml_state->accu, POP_STACK()); break;
+      case EQ:    Caml_state->accu = ml_eq(Caml_state->accu, POP_STACK()); break;
+      case LT:    Caml_state->accu = ml_lt(Caml_state->accu, POP_STACK()); break;
+      case LE:    Caml_state->accu = ml_le(Caml_state->accu, POP_STACK()); break;
+      case GT:    Caml_state->accu = ml_gt(Caml_state->accu, POP_STACK()); break;
+      case GE:    Caml_state->accu = ml_ge(Caml_state->accu, POP_STACK()); break;
+      case PRINT: Caml_state->accu = ml_print(Caml_state->accu); break;
       }
       break;
 
@@ -74,7 +79,7 @@ mlvalue caml_interprete(code_t* prog) {
       break;
 
     case BRANCHIFNOT:
-      if (Long_val(accu) == 0) {
+      if (Long_val(Caml_state->accu) == 0) {
         pc = prog[pc];
       } else {
         pc++;
@@ -82,7 +87,7 @@ mlvalue caml_interprete(code_t* prog) {
       break;
 
     case PUSH:
-      PUSH_STACK(accu);
+      PUSH_STACK(Caml_state->accu);
       break;
 
     case POP:
@@ -90,11 +95,11 @@ mlvalue caml_interprete(code_t* prog) {
       break;
 
     case ACC:
-      accu = stack[Caml_state->stack_pointer-prog[pc++]-1];
+      Caml_state->accu = stack[Caml_state->stack_pointer-prog[pc++]-1];
       break;
 
     case ENVACC:
-      accu = Field(env, prog[pc++]);
+      Caml_state->accu = Field(Caml_state->env, prog[pc++]);
       break;
 
     case APPLY: {
@@ -110,7 +115,7 @@ mlvalue caml_interprete(code_t* prog) {
       Caml_state->stack_pointer+= 3;//on a remonté le pointeur de pile de 3 en décalant les valeurs
       stack[Caml_state->stack_pointer-n-1] = Val_long(extra_args);
       stack[Caml_state->stack_pointer-n-2]  = Val_long(pc);
-      stack[Caml_state->stack_pointer-n-3] = env;
+      stack[Caml_state->stack_pointer-n-3] = Caml_state->env;
       #endif 
       #if 0
 
@@ -119,7 +124,7 @@ mlvalue caml_interprete(code_t* prog) {
         tmp[i] = POP_STACK();
 
       }
-      PUSH_STACK(env);
+      PUSH_STACK(Caml_state->env);
       PUSH_STACK(Val_long(pc));
       PUSH_STACK(Val_long(extra_args));
       /* push in reverse order to keep the initial order */
@@ -127,8 +132,8 @@ mlvalue caml_interprete(code_t* prog) {
         PUSH_STACK(tmp[i]);
       }
       #endif
-      pc = Addr_closure(accu);
-      env = Env_closure(accu);
+      pc = Addr_closure(Caml_state->accu);
+      Caml_state->env = Env_closure(Caml_state->accu);
       extra_args = n-1;
       break;
     }
@@ -159,8 +164,8 @@ mlvalue caml_interprete(code_t* prog) {
         PUSH_STACK(tmp[i]);
       }
       #endif
-      pc = Addr_closure(accu);
-      env = Env_closure(accu);
+      pc = Addr_closure(Caml_state->accu);
+      Caml_state->env = Env_closure(Caml_state->accu);
       extra_args += n-1;
       break;
     }
@@ -173,21 +178,21 @@ mlvalue caml_interprete(code_t* prog) {
       if (extra_args == 0) {
         extra_args = Long_val(POP_STACK());
         pc  = Long_val(POP_STACK());
-        env = POP_STACK();
+        Caml_state->env = POP_STACK();
       } else {
         extra_args--;
-        pc = Addr_closure(accu);
-        env = Env_closure(accu);
+        pc = Addr_closure(Caml_state->accu);
+        Caml_state->env = Env_closure(Caml_state->accu);
       }
       break;
     }
 
     case RESTART: {
-      unsigned int n = Size(env);
+      unsigned int n = Size(Caml_state->env);
       for (unsigned int i = n-1; i > 0; i--) {
-        PUSH_STACK(Field(env,i));
+        PUSH_STACK(Field(Caml_state->env,i));
       }
-      env = Field(env,0);
+      Caml_state->env = Field(Caml_state->env,0);
       extra_args += n-1;
       break;
     }
@@ -198,14 +203,14 @@ mlvalue caml_interprete(code_t* prog) {
         extra_args -= n;
       } else {
         mlvalue closure_env = Make_env(extra_args + 2);
-        Field(closure_env,0) = env;
+        Field(closure_env,0) = Caml_state->env;
         for (unsigned int i = 0; i <= extra_args; i++) {
           Field(closure_env,i+1) = POP_STACK();
         }
-        accu = make_closure(pc-3,closure_env);
+        Caml_state->accu = make_closure(pc-3,closure_env);
         extra_args = Long_val(POP_STACK());
         pc  = Long_val(POP_STACK());
-        env = POP_STACK();
+        Caml_state->env = POP_STACK();
       }
       break;
     }
@@ -214,14 +219,14 @@ mlvalue caml_interprete(code_t* prog) {
       uint64_t addr = prog[pc++];
       uint64_t n = prog[pc++];
       if (n > 0) {
-        PUSH_STACK(accu);
+        PUSH_STACK(Caml_state->accu);
       }
       mlvalue closure_env = Make_env(n+1);
       Field(closure_env,0) = Val_long(addr);
       for (uint64_t i = 0; i < n; i++) {
         Field(closure_env,i+1) = POP_STACK();
       }
-      accu = make_closure(addr,closure_env);
+      Caml_state->accu = make_closure(addr,closure_env);
       break;
     }
 
@@ -229,20 +234,20 @@ mlvalue caml_interprete(code_t* prog) {
       uint64_t addr = prog[pc++];
       uint64_t n = prog[pc++];
       if (n > 0) {
-        PUSH_STACK(accu);
+        PUSH_STACK(Caml_state->accu);
       }
       mlvalue closure_env = Make_env(n+1);
       Field(closure_env,0) = Val_long(addr);
       for (uint64_t i = 0; i < n; i++) {
         Field(closure_env,i+1) = POP_STACK();
       }
-      accu = make_closure(addr,closure_env);
-      PUSH_STACK(accu);
+      Caml_state->accu = make_closure(addr,closure_env);
+      PUSH_STACK(Caml_state->accu);
       break;
     }
 
     case OFFSETCLOSURE: {
-      accu = make_closure(Long_val(Field(env,0)), env);
+      Caml_state->accu = make_closure(Long_val(Field(Caml_state->env,0)), Caml_state->env);
       break;
     }
 
@@ -250,57 +255,57 @@ mlvalue caml_interprete(code_t* prog) {
       uint64_t n = prog[pc++];
       mlvalue blk = make_block(n,BLOCK_T);
       if (n > 0) {
-        Field(blk,0) = accu;
+        Field(blk,0) = Caml_state->accu;
         for (unsigned int i = 1; i < n; i++) {
           Field(blk, i) = POP_STACK();
         }
       }
-      accu = blk;
+      Caml_state->accu = blk;
       break;
     }
 
     case GETFIELD: {
       uint64_t n = prog[pc++];
-      accu = Field(accu, n);
+      Caml_state->accu = Field(Caml_state->accu, n);
       break;
     }
 
     case VECTLENGTH: {
-      accu = Val_long(Size(accu));
+      Caml_state->accu = Val_long(Size(Caml_state->accu));
       break;
     }
 
     case GETVECTITEM: {
       uint64_t n = Long_val(POP_STACK());
-      accu = Field(accu, n);
+      Caml_state->accu = Field(Caml_state->accu, n);
       break;
     }
 
     case SETFIELD: {
       uint64_t n = prog[pc++];
-      Field(accu, n) = POP_STACK();
+      Field(Caml_state->accu, n) = POP_STACK();
       break;
     }
 
     case SETVECTITEM: {
       uint64_t n = Long_val(POP_STACK());
       mlvalue v = POP_STACK();
-      Field(accu, n) = v;
-      accu = Unit;
+      Field(Caml_state->accu, n) = v;
+      Caml_state->accu = Unit;
       break;
     }
 
     case ASSIGN: {
       uint64_t n = prog[pc++];
-      stack[Caml_state->stack_pointer-n-1] = accu;
-      accu = Unit;
+      stack[Caml_state->stack_pointer-n-1] = Caml_state->accu;
+      Caml_state->accu = Unit;
       break;
     }
 
     case PUSHTRAP: {
       uint64_t addr = prog[pc++];
       PUSH_STACK(Val_long(extra_args));
-      PUSH_STACK(env);
+      PUSH_STACK(Caml_state->env);
       PUSH_STACK(Val_long(trap_sp));
       PUSH_STACK(Val_long(addr));
       trap_sp = Caml_state->stack_pointer;
@@ -310,27 +315,27 @@ mlvalue caml_interprete(code_t* prog) {
     case POPTRAP: {
       POP_STACK(); // popping pc
       trap_sp = Long_val(POP_STACK());
-      POP_STACK(); // popping env
+      POP_STACK(); // popping Caml_state->env
       POP_STACK(); // popping extra_args
       break;
     }
 
     case RAISE: {
       if (trap_sp == 0) {
-        fprintf(stderr, "Uncaught exception: %s\n", val_to_str(accu));
+        fprintf(stderr, "Uncaught exception: %s\n", val_to_str(Caml_state->accu));
         exit(EXIT_FAILURE);
       } else {
         Caml_state->stack_pointer = trap_sp;
         pc = Long_val(POP_STACK());
         trap_sp = Long_val(POP_STACK());
-        env = POP_STACK();
+        Caml_state->env = POP_STACK();
         extra_args = Long_val(POP_STACK());
         break;
       }
     }
 
     case STOP:
-      return accu;
+      return Caml_state->accu;
 
     default:
       fprintf(stderr, "Unkown bytecode: %lu at offset %d\n", prog[pc-1], pc-1);
